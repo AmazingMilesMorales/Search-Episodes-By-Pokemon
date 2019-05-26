@@ -20,7 +20,8 @@ try:
 
         respData = respData.replace("\\","")
         respData = respData.replace("* {{p|","POKETIME")
-
+        respData = respData.replace("*{{p|","POKETIME")
+        
         # create new file
         if x == 1:
             f = open("D:/projects/apicallresults.txt", "w")
