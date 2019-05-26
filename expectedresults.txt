@@ -4651,7 +4651,28 @@ Chansey
 Zigzagoon
 Beautifly
 EP: 283
+Pikachu
+Meowth
+Wobbuffet
+Torchic
+Forretress
+Seviper
+Cacnea
+Shroomish
+Machoke
 EP: 284
+Pikachu
+Meowth
+Wobbuffet
+Taillow
+Treecko
+Torchic
+Seviper
+Pelipper
+Bellsprout
+Magnemite
+Magby
+Zigzagoon
 EP: 285
 Pikachu
 Meowth
