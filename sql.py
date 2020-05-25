@@ -6,8 +6,14 @@ import species
 
 # Commands and Constants
 CREATE_EPISODES_TABLE = """CREATE TABLE episodes (
-            episodeNumb integer,
+            id integer,
+            type text,
+            episodeNum integer,
             englishEpisodeTitle text,
+            japaneseEpisodeTitle text,
+            japaneseEpisodeTitleTranslated text,
+            japaneseBroadcastDate text,
+            americanBroadcastDate text,
             pokemonAppearances text
         )"""
 

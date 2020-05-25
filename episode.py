@@ -4,6 +4,8 @@ import urllib.request
 headers = {}
 headers['User-Agent'] = "Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.17 (KHTML, like Gecko) Chrome/24.0.1312.27 Safari/537.17"
 
+# NOTE: For the purposes of data storage, every piece of animated media (including movies and shorts) is stored as an "episode"
+
 def getEpisodeInfo(episodeNum):
     print(episodeNum)
     try:
@@ -21,12 +23,24 @@ def getEpisodeInfo(episodeNum):
         if episodePageText.startswith("a:1:{s:5:\"error\""):
            return -1
 
-        englishEpisodeTitle = getEnglishEpisodeTitleFromEpisodePageText(episodePageText)
+        episodeCode = getInfoFromEpisodePageText(episodePageText, "epcode")
+        englishEpisodeTitle = getInfoFromEpisodePageText(episodePageText, "title_en")
+        japaneseEpisodeTitle = getInfoFromEpisodePageText(episodePageText, "title_ja")
+        japaneseEpisodeTitleTranslated = getInfoFromEpisodePageText(episodePageText, "title_ja_trans")
+        japaneseBroadcastDate = getInfoFromEpisodePageText(episodePageText, "broadcast_jp")
+        americanBroadcastDate = getInfoFromEpisodePageText(episodePageText, "broadcast_us")
+
         pokemonAppearances = getPokemonAppearancesFromEpisodePageText(episodePageText)
 
         return {
+            "id": episodeNum,
+            "type": "main_anime",
             "episodeNum": episodeNum,
+            "episodeCode": episodeCode,            
             "englishEpisodeTitle": englishEpisodeTitle,
+            "japaneseEpisodeTitle": japaneseEpisodeTitle,
+            "japaneseBroadcastDate": japaneseBroadcastDate,
+            "americanBroadcastDate": americanBroadcastDate,
             "pokemonAppearances": pokemonAppearances,
             }
 
@@ -42,21 +56,32 @@ def getPokemonAppearancesFromEpisodePageText(episodePageText):
             pokemon.append(line.split("* {{p|")[1].split("}}")[0])
 
     # Remove duplicates before returning (such as multiple Pikachus in one episode)
-    return list(dict.fromkeys(pokemon))
+    # return list(dict.fromkeys(pokemon))
+    return pokemon
 
-def getEnglishEpisodeTitleFromEpisodePageText(episodePageText):
-    englishTitle = episodePageText.split("title_en=")[1].split("|")[0]
-    return englishTitle.strip()
+def getInfoFromEpisodePageText(episodePageText, string):
+    info = episodePageText.split(string+"=")[1].split("|")[0]
+    return info.strip()
 
 
-def getEveryEpisodeInfo():
+def getEveryMainAnimeEpisodeInfo():
     pokemonEpisodesInfo = []
     episodeNum = 1
     while True:
         episodeInfo = getEpisodeInfo(episodeNum)
         if(episodeInfo != -1):
             pokemonEpisodesInfo.append(episodeInfo)
+            with open("output.txt", "a") as txt_file:
+                txt_file.write(str(episodeInfo))
+                txt_file.write("\n")
             episodeNum = episodeNum + 1
         else:
             break
     return getEveryEpisodeInfo
+
+def getEveryEpisodeInfo():
+    pokemonEpisodesInfo = getEveryMainAnimeEpisodeInfo()
+    # TODO: Movies, Side Stories, Origins, Generations, Twilight Wings, Mystery Dungeon, Animated trailers
+    return pokemonEpisodesInfo
+
+getEveryMainAnimeEpisodeInfo()
