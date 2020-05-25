@@ -4,8 +4,8 @@ import urllib.request
 headers = {}
 headers['User-Agent'] = "Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.17 (KHTML, like Gecko) Chrome/24.0.1312.27 Safari/537.17"
 
-def getEveryPokemonSpeciesInfo():
-    everyPokemonSpeciesInfo = []
+def getEverySpeciesInfo():
+    everySpeciesInfo = []
     try:
         # This page has a list of every Pokemon
         url = 'https://bulbapedia.bulbagarden.net/w/api.php?action=parse&format=php&page=List_of_Pok%C3%A9mon_by_National_Pok%C3%A9dex_number&redirects=1&prop=wikitext'
@@ -14,13 +14,16 @@ def getEveryPokemonSpeciesInfo():
         pageText = str(resp.read().decode('UTF-8')).splitlines()
 
         id = 1
+        # There can be multiple forms of one species on the list, so check to make sure we only accept one
+        previousName = "" 
+        
         # Each line of the page has information on each Pokemon that we can parse
         for line in pageText:
             pokeInfo = line.split("|")
             if len(pokeInfo) > 5:
                 pkDexNum = pokeInfo[2]
-                if "{{rdex|" in line and ((pokeInfo[2].isnumeric() and int(pokeInfo[2]) == id) or pokeInfo[2] == "???"):
-                    name = pokeInfo[3]
+                name = pokeInfo[3]
+                if ("{{rdex|" in line and ((pokeInfo[2].isnumeric() and int(pokeInfo[2]) == id) or pokeInfo[2] == "???") and name != previousName):
                     primaryType = pokeInfo[5].split("}}")[0]
 
                     secondaryType = ''
@@ -37,7 +40,7 @@ def getEveryPokemonSpeciesInfo():
                     else:
                         image = 'https://cdn.bulbagarden.net/upload/a/ab/000MS.png'
                     '''
-                    everyPokemonSpeciesInfo.append({
+                    everySpeciesInfo.append({
                         'pokemonId': id,
                         'pkDexNum': pkDexNum,
                         'name': name,
@@ -46,7 +49,8 @@ def getEveryPokemonSpeciesInfo():
                         'image': image,
                         })
                     id = id + 1
-        return everyPokemonSpeciesInfo    
+                    previousName = name
+        return everySpeciesInfo    
 
     except Exception as e:
         print(str(e))
