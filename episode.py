@@ -50,7 +50,14 @@ def getEpisodeInfo(episodeNum):
 
 def getPokemonAppearancesFromEpisodePageText(episodePageText):
     pokemon = []
-    pokemonSection = episodePageText.split("===Pokémon===")[1].split("==")[0].splitlines()
+    pokemonSection = []
+    if "===Pokémon===" in episodePageText:
+        pokemonSection = episodePageText.split("===Pokémon===")[1].split("==")[0].splitlines()
+    elif "=== Pokémon ===" in episodePageText:
+        pokemonSection = episodePageText.split("=== Pokémon ===")[1].split("==")[0].splitlines()
+    else:
+        raise Exception('Pokémon section not found on page')
+
     for line in pokemonSection:
         if line.startswith("* {{p|"):
             pokemon.append(line.split("* {{p|")[1].split("}}")[0])
@@ -60,7 +67,11 @@ def getPokemonAppearancesFromEpisodePageText(episodePageText):
     return pokemon
 
 def getInfoFromEpisodePageText(episodePageText, string):
-    info = episodePageText.split(string+"=")[1].split("|")[0]
+    try:
+        info = episodePageText.split(string+"=")[1].split("|")[0]
+    # Sometimes, info is not on the page. For example: no English titles for Japanese-only episodes.
+    except Exception as e:
+        return ''
     return info.strip()
 
 
@@ -71,9 +82,13 @@ def getEveryMainAnimeEpisodeInfo():
         episodeInfo = getEpisodeInfo(episodeNum)
         if(episodeInfo != -1):
             pokemonEpisodesInfo.append(episodeInfo)
-            with open("output.txt", "a") as txt_file:
+            # Since we are dealing with a 1115+ episodes of content, for testing I'll export it so I don't
+            # have to call this over and over again
+            '''
+            with open("output.txt", "a", encoding="utf-8") as txt_file:
                 txt_file.write(str(episodeInfo))
                 txt_file.write("\n")
+            '''
             episodeNum = episodeNum + 1
         else:
             break
