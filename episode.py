@@ -7,7 +7,6 @@ headers['User-Agent'] = "Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.17 (KHTML
 # NOTE: For the purposes of data storage, every piece of animated media (including movies and shorts) is stored as an "episode"
 
 def getEpisodeInfo(episodeNum):
-    print(episodeNum)
     try:
         # Get wikitext of each episode
         url = 'https://bulbapedia.bulbagarden.net/w/api.php?action=parse&format=php&page=EP' + str(episodeNum) + '&redirects=1&prop=wikitext'
@@ -39,6 +38,7 @@ def getEpisodeInfo(episodeNum):
             "episodeCode": episodeCode,            
             "englishEpisodeTitle": englishEpisodeTitle,
             "japaneseEpisodeTitle": japaneseEpisodeTitle,
+            "japaneseEpisodeTitleTranslated": japaneseEpisodeTitleTranslated,
             "japaneseBroadcastDate": japaneseBroadcastDate,
             "americanBroadcastDate": americanBroadcastDate,
             "pokemonAppearances": pokemonAppearances,
@@ -69,6 +69,9 @@ def getPokemonAppearancesFromEpisodePageText(episodePageText):
 def getInfoFromEpisodePageText(episodePageText, string):
     try:
         info = episodePageText.split(string+"=")[1].split("|")[0]
+        # Sometimes instead of actual info, the wikitext will contain a warning to not put bad information
+        if "<!--" in info:
+            return ''
     # Sometimes, info is not on the page. For example: no English titles for Japanese-only episodes.
     except Exception as e:
         return ''
@@ -77,26 +80,20 @@ def getInfoFromEpisodePageText(episodePageText, string):
 
 def getEveryMainAnimeEpisodeInfo():
     pokemonEpisodesInfo = []
-    episodeNum = 1
+    episodeNum = 1110
     while True:
         episodeInfo = getEpisodeInfo(episodeNum)
         if(episodeInfo != -1):
             pokemonEpisodesInfo.append(episodeInfo)
-            # Since we are dealing with a 1115+ episodes of content, for testing I'll export it so I don't
-            # have to call this over and over again
-            '''
-            with open("output.txt", "a", encoding="utf-8") as txt_file:
-                txt_file.write(str(episodeInfo))
-                txt_file.write("\n")
-            '''
+            print(episodeNum)
             episodeNum = episodeNum + 1
         else:
             break
-    return getEveryEpisodeInfo
+    return pokemonEpisodesInfo
 
 def getEveryEpisodeInfo():
     pokemonEpisodesInfo = getEveryMainAnimeEpisodeInfo()
     # TODO: Movies, Side Stories, Origins, Generations, Twilight Wings, Mystery Dungeon, Animated trailers
     return pokemonEpisodesInfo
 
-getEveryMainAnimeEpisodeInfo()
+#getEveryMainAnimeEpisodeInfo()

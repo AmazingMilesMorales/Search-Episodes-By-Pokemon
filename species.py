@@ -16,7 +16,7 @@ def getEverySpeciesInfo():
         id = 1
         # There can be multiple forms of one species on the list, so check to make sure we only accept one
         previousName = "" 
-        
+
         # Each line of the page has information on each Pokemon that we can parse
         for line in pageText:
             pokeInfo = line.split("|")
@@ -28,7 +28,6 @@ def getEverySpeciesInfo():
 
                     secondaryType = ''
                     image = ''
-                    pokemonId = id
 
                     # Fifth element of pokeInfo tells us if a Pokemon has two types
                     if pokeInfo[4] == '2':
@@ -41,7 +40,7 @@ def getEverySpeciesInfo():
                         image = 'https://cdn.bulbagarden.net/upload/a/ab/000MS.png'
                     '''
                     everySpeciesInfo.append({
-                        'pokemonId': id,
+                        'id': id,
                         'pkDexNum': pkDexNum,
                         'name': name,
                         'primaryType': primaryType,
