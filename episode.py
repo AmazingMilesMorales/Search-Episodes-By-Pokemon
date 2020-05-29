@@ -20,7 +20,8 @@ def getEpisodeInfo(episodeNum):
 
         # Page does not exist
         if episodePageText.startswith("a:1:{s:5:\"error\""):
-           return -1
+            print("Error getting episode number " + str(episodeNum) + ". Stopping here.")
+            return -1
 
         episodeCode = getInfoFromEpisodePageText(episodePageText, "epcode")
         englishEpisodeTitle = getInfoFromEpisodePageText(episodePageText, "title_en")
@@ -80,12 +81,12 @@ def getInfoFromEpisodePageText(episodePageText, string):
 
 def getEveryMainAnimeEpisodeInfo():
     pokemonEpisodesInfo = []
-    episodeNum = 1110
+    episodeNum = 1
     while True:
         episodeInfo = getEpisodeInfo(episodeNum)
         if(episodeInfo != -1):
             pokemonEpisodesInfo.append(episodeInfo)
-            print(episodeNum)
+            print("Getting episode info from Bulbapedia API for Episode " + str(episodeNum))
             episodeNum = episodeNum + 1
         else:
             break
@@ -95,5 +96,3 @@ def getEveryEpisodeInfo():
     pokemonEpisodesInfo = getEveryMainAnimeEpisodeInfo()
     # TODO: Movies, Side Stories, Origins, Generations, Twilight Wings, Mystery Dungeon, Animated trailers
     return pokemonEpisodesInfo
-
-#getEveryMainAnimeEpisodeInfo()

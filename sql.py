@@ -27,7 +27,7 @@ CREATE_SPECIES_TABLE = """CREATE TABLE species (
             image text
         )"""
 
-CREATE_EPISODES_SPECIES_TABLES = """CREATE TABLE episodesSpecies (
+CREATE_EPISODES_SPECIES_TABLE = """CREATE TABLE episodesSpecies (
            episodeId integer,
            pokemonId integer
 )"""
@@ -38,22 +38,28 @@ DROP_EPISODES_TABLE = "DROP TABLE episodes"
 
 DROP_SPECIES_TABLE = "DROP TABLE species"
 
+DROP_EPISODES_SPECIES_TABLE = "DROP TABLE episodesSpecies"
+
 CLEAR_EPISODES_TABLE_DATA = "DELETE FROM episodes"
 
 CLEAR_SPECIES_TABLE_DATA = "DELETE FROM species"
+
+CLEAR_EPISODES_SPECIES_TABLE_DATA = "DELETE FROM episodesSpecies"
 
 
 def sendSqlStatement(command):
     connection = sqlite3.connect(DATABASE)
     db = connection.cursor()
     db.execute(command)
-    print(db.fetchall())
     connection.commit()
+    return db.fetchall()
     connection.close()
 
 def escapedString(string):
     return string.translate(str.maketrans({"'":  r"''"}))
 
+def stripSqlResult(string):
+    return string.strip("(),[] ")
 
 def fillPokemonSpeciesTable(pokemonSpeciesInfo):
     connection = sqlite3.connect(DATABASE)
@@ -78,6 +84,7 @@ def fillEpisodesTable(pokemonEpisodeInfo):
     db = connection.cursor()
 
     for pokemonEpisode in pokemonEpisodeInfo:
+        print("Filling EpisodesTable for Episode " + str(pokemonEpisode['id']))
         sqlStatement = ("INSERT INTO episodes VALUES (" + 
             str(pokemonEpisode['id']) + ", '" +
             pokemonEpisode['type'] + "', " +
@@ -88,7 +95,6 @@ def fillEpisodesTable(pokemonEpisodeInfo):
             escapedString(pokemonEpisode['japaneseEpisodeTitleTranslated']) + "', '" +
             pokemonEpisode['japaneseBroadcastDate'] + "', '" +
             pokemonEpisode['americanBroadcastDate'] + "')")
-        print(sqlStatement)
         db.execute(sqlStatement)
     connection.commit()
     connection.close()
@@ -98,19 +104,46 @@ def fillEpisodesSpeciesTable(pokemonEpisodeInfo):
     db = connection.cursor()
 
     for pokemonEpisode in pokemonEpisodeInfo:
-        episodeId = pokemonEpisode['id']
+        episodeId = str(pokemonEpisode['id'])
+        print("Filling EpisodesSpeciesTable for Episode " + episodeId)
         pokemonAppearances = pokemonEpisode['pokemonAppearances']
         for pokemon in pokemonAppearances:
-            getPokemonId = "SELECT id FROM species WHERE name='" + escapedString(pokemon) + "'"
-            db.execute(getPokemonId)
-            connection.commit()
-            pokemonId = int(str(db.fetchall().pop()).strip("(),"))
-            sqlStatement = ("INSERT INTO episodesSpecies VALUES (" + str(episodeId) + ", " + str(pokemonId) + ")")
+            pokemonId = getPokemonIdByName(pokemon)
+            sqlStatement = ("INSERT INTO episodesSpecies VALUES (" + episodeId + ", " + pokemonId + ")")
             db.execute(sqlStatement)
-            print(sqlStatement)
     connection.commit()
     connection.close()
-            
+
+def getPokemonIdByName(pokemon):
+    connection = sqlite3.connect(DATABASE)
+    db = connection.cursor()    
+    getPokemonId = "SELECT id FROM species WHERE name='" + escapedString(pokemon) + "'"
+    db.execute(getPokemonId)
+    connection.commit()
+    return stripSqlResult(str(db.fetchall()))
+
+def getEpisodesByPokemonId(pokemonId):
+    connection = sqlite3.connect(DATABASE)
+    db = connection.cursor()    
+    getEpisodes = "SELECT episodeId FROM episodesSpecies WHERE pokemonId='" + pokemonId + "'"
+    db.execute(getEpisodes)
+    connection.commit()
+    episodeIds = db.fetchall()
+    for episodeId in episodeIds:
+        episodeIdString = stripSqlResult(str(episodeId))
+        episodeNum = stripSqlResult(str(sendSqlStatement("SELECT episodeNum FROM episodes WHERE id=" + episodeIdString + "")))
+        episodeTitle = stripSqlResult(str(sendSqlStatement("SELECT englishEpisodeTitle FROM episodes WHERE id=" + episodeIdString + "")))
+        if episodeTitle == "''":
+            episodeTitle = stripSqlResult(str(sendSqlStatement("SELECT japaneseEpisodeTitleTranslated FROM episodes WHERE id=" + episodeIdString))) + " (translated)"
+        print("Your Pokemon appears in Episode " + episodeNum + ": " + episodeTitle)
+        connection.commit()
+    connection.close()
+    print("Done!")
+
+def getEpisodesByPokemonName(pokemon):
+    pokemonId = getPokemonIdByName(pokemon)
+    getEpisodesByPokemonId(pokemonId)
+
 
 def dumpFile(file, listObject):
     with open(file, 'wb') as fp:
@@ -120,25 +153,23 @@ def readFile(file):
     with open(file, 'rb') as fp:
         return pickle.load(fp)
 
-# sendSqlStatement(DROP_SPECIES_TABLE)
-# sendSqlStatement(CREATE_SPECIES_TABLE)
-# pokemonSpeciesInfo = species.getEverySpeciesInfo()
-# fillPokemonSpeciesTable(pokemonSpeciesInfo)
-# sendSqlStatement("SELECT name from species")
+def createDatabase():
+    # Create Species Table
+    sendSqlStatement(DROP_SPECIES_TABLE)
+    sendSqlStatement(CREATE_SPECIES_TABLE)
+    pokemonSpeciesInfo = species.getEverySpeciesInfo()
+    fillPokemonSpeciesTable(pokemonSpeciesInfo)
 
-# sendSqlStatement(DROP_EPISODES_TABLE)
-# sendSqlStatement(CREATE_EPISODES_TABLE)
-# sendSqlStatement(CLEAR_EPISODES_TABLE_DATA)
-# pokemonEpisodeInfo = episode.getEveryEpisodeInfo()
-# Since we are dealing with a 1115+ episodes of content, for testing I'll export it so I don't
-# have to call this over and over again
-# dumpFile("pokemonEpisodeInfo.p", pokemonEpisodeInfo)
-# print(savedPokemonEpisodeInfo)
-# fillEpisodesTable(savedPokemonEpisodeInfo)
-# sendSqlStatement("SELECT * from episodes WHERE episodeNum>= 10")
+    # Create Episodes Table
+    sendSqlStatement(DROP_EPISODES_TABLE)
+    sendSqlStatement(CREATE_EPISODES_TABLE)
+    pokemonEpisodeInfo = episode.getEveryEpisodeInfo()
+    # Since we are dealing with a 1115+ episodes of content, just in case
+    # any errors happen, I'll dump the file for reuse/testing
+    dumpFile("pokemonEpisodeInfo.p", pokemonEpisodeInfo)
+    fillEpisodesTable(pokemonEpisodeInfo)
 
-# sendSqlStatement(CREATE_EPISODES_SPECIES_TABLES)
-savedPokemonEpisodeInfo = readFile("pokemonEpisodeInfo.p")
-fillEpisodesSpeciesTable(savedPokemonEpisodeInfo)
-
-# sendSqlStatement("SELECT id FROM species WHERE name='Pikachu'")
+    # Create Species-Episodes Relationship Table
+    sendSqlStatement(DROP_EPISODES_SPECIES_TABLE)
+    sendSqlStatement(CREATE_EPISODES_SPECIES_TABLE)
+    fillEpisodesSpeciesTable(pokemonEpisodeInfo)
