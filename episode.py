@@ -1,4 +1,5 @@
 import urllib.request
+import sys
 
 # Headers used for every API request
 headers = {}
@@ -47,7 +48,7 @@ def getEpisodeInfo(episodeNum):
 
     except Exception as e:
         print(str(e))
-        return -1
+        return -503
 
 def getPokemonAppearancesFromEpisodePageText(episodePageText):
     pokemon = []
@@ -84,7 +85,11 @@ def getEveryMainAnimeEpisodeInfo():
     episodeNum = 1
     while True:
         episodeInfo = getEpisodeInfo(episodeNum)
-        if(episodeInfo != -1):
+        if episodeInfo == -1: break
+        if episodeInfo == -503:
+            print("An error occured while fetching episodes. Please try again.")
+            exit()
+        if episodeInfo != -1:
             pokemonEpisodesInfo.append(episodeInfo)
             print("Getting episode info from Bulbapedia API for Episode " + str(episodeNum))
             episodeNum = episodeNum + 1
