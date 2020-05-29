@@ -122,7 +122,7 @@ def getPokemonIdByName(pokemon):
     connection.commit()
     return stripSqlResult(str(db.fetchall()))
 
-def getEpisodesByPokemonId(pokemonId):
+def getEpisodesByPokemonId(pokemonId, pokemon):
     connection = sqlite3.connect(DATABASE)
     db = connection.cursor()    
     getEpisodes = "SELECT episodeId FROM episodesSpecies WHERE pokemonId='" + pokemonId + "'"
@@ -135,14 +135,14 @@ def getEpisodesByPokemonId(pokemonId):
         episodeTitle = stripSqlResult(str(sendSqlStatement("SELECT englishEpisodeTitle FROM episodes WHERE id=" + episodeIdString + "")))
         if episodeTitle == "''":
             episodeTitle = stripSqlResult(str(sendSqlStatement("SELECT japaneseEpisodeTitleTranslated FROM episodes WHERE id=" + episodeIdString))) + " (translated)"
-        print("Your Pokemon appears in Episode " + episodeNum + ": " + episodeTitle)
+        print(pokemon + " appears in Episode " + episodeNum + ": " + episodeTitle)
         connection.commit()
     connection.close()
     print("Done!")
 
 def getEpisodesByPokemonName(pokemon):
     pokemonId = getPokemonIdByName(pokemon)
-    getEpisodesByPokemonId(pokemonId)
+    getEpisodesByPokemonId(pokemonId, pokemon)
 
 
 def dumpFile(file, listObject):
@@ -153,23 +153,41 @@ def readFile(file):
     with open(file, 'rb') as fp:
         return pickle.load(fp)
 
-def createDatabase():
-    # Create Species Table
+def createSpeciesTable():
     sendSqlStatement(DROP_SPECIES_TABLE)
     sendSqlStatement(CREATE_SPECIES_TABLE)
     pokemonSpeciesInfo = species.getEverySpeciesInfo()
     fillPokemonSpeciesTable(pokemonSpeciesInfo)
 
+def createDatabase():
+    # Create Species Table
+    createSpeciesTable()
+
     # Create Episodes Table
     sendSqlStatement(DROP_EPISODES_TABLE)
     sendSqlStatement(CREATE_EPISODES_TABLE)
-    pokemonEpisodeInfo = episode.getEveryEpisodeInfo()
+    pokemonEpisodesInfo = episode.getEveryEpisodeInfo()
     # Since we are dealing with a 1115+ episodes of content, just in case
     # any errors happen, I'll dump the file for reuse/testing
-    dumpFile("pokemonEpisodeInfo.p", pokemonEpisodeInfo)
-    fillEpisodesTable(pokemonEpisodeInfo)
+    dumpFile("pokemonEpisodesInfo.p", pokemonEpisodesInfo)
+    fillEpisodesTable(pokemonEpisodesInfo)
 
     # Create Species-Episodes Relationship Table
     sendSqlStatement(DROP_EPISODES_SPECIES_TABLE)
     sendSqlStatement(CREATE_EPISODES_SPECIES_TABLE)
-    fillEpisodesSpeciesTable(pokemonEpisodeInfo)
+    fillEpisodesSpeciesTable(pokemonEpisodesInfo)
+
+def createDatabaseFromSavedFile(file="pokemonEpisodesInfo.p"):
+    # Create Species Table
+    createSpeciesTable()
+
+    # Create Episodes Table
+    sendSqlStatement(DROP_EPISODES_TABLE)
+    sendSqlStatement(CREATE_EPISODES_TABLE)
+    pokemonEpisodesInfo = readFile(file)
+    fillEpisodesTable(pokemonEpisodesInfo)
+
+    # Create Species-Episodes Relationship Table
+    sendSqlStatement(DROP_EPISODES_SPECIES_TABLE)
+    sendSqlStatement(CREATE_EPISODES_SPECIES_TABLE)
+    fillEpisodesSpeciesTable(pokemonEpisodesInfo)
