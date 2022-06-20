@@ -7,14 +7,29 @@ headers['User-Agent'] = "Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.17 (KHTML
 
 # NOTE: For the purposes of data storage, every piece of animated media (including movies and shorts) is stored as an "episode"
 
-def getLongMediaTypeString(mediaType):
-    if mediaType == 'EP': return 'episode'
-    elif mediaType == 'M': return 'movie'
+MEDIATYPES = {
+    'EP': 'episode',
+    'HS': 'Weekly Pokémon Broadcasting Station side story episode',
+    'PK': 'Pikachu short',
+    'M': 'movie', 
+    'PO': 'Pokemon Origins episode', 
+    'PG': 'Pokemon Generations episode', 
+    'TW': 'Twilight Wings episode', 
+    'PE': 'Pokemon Evolutions episode', 
+    'HIS': 'Hisuian Snow episode',
+    'DPS': 'Diamond and Pearl special',
+    'BWS': 'Black and Pearl special',
+    'XYS': 'X and Y special',
+}
+
+def getEpisodeNumString(episodeNum):
+    if episodeNum < 10: return '0' + str(episodeNum)
+    return str(episodeNum)
 
 def getMediaInfo(episodeNum, mediaType):
     try:
         # Get wikitext of each episode
-        url = 'https://bulbapedia.bulbagarden.net/w/api.php?action=parse&format=php&page=' + mediaType + str(episodeNum) + '&redirects=1&prop=wikitext'
+        url = 'https://bulbapedia.bulbagarden.net/w/api.php?action=parse&format=php&page=' + mediaType + getEpisodeNumString(episodeNum) + '&redirects=1&prop=wikitext'
         # There is one URL page that does not lead to the expected page, so I handled this one time error here:       
         if mediaType == 'EP' and episodeNum == 375:
             url = 'https://bulbapedia.bulbagarden.net/w/api.php?action=parse&format=php&page=AG101&redirects=1&prop=wikitext'
@@ -25,7 +40,7 @@ def getMediaInfo(episodeNum, mediaType):
 
         # Page does not exist
         if episodePageText.startswith("a:1:{s:5:\"error\""):
-            longMediaType = getLongMediaTypeString(mediaType)
+            longMediaType = MEDIATYPES[mediaType]
             print("Error getting " + longMediaType + " number " + str(episodeNum) + ". Stopping the search for " + longMediaType + "s here.")
             return -1
 
@@ -97,45 +112,11 @@ def getInfoFromEpisodePageText(episodePageText, string):
         return ''
     return info.strip()
 
-
-def getEveryMainAnimeEpisodeInfo(episodeNum=1):
-    pokemonEpisodesInfo = []
-    while True:
-        episodeInfo = getMediaInfo(episodeNum, 'EP')
-        if episodeInfo == -1: break
-        if episodeInfo == -503:
-            print("An error occured while fetching episodes. Please try again.")
-            exit()
-        if episodeInfo != -1:
-            pokemonEpisodesInfo.append(episodeInfo)
-            print("Getting episode info from Bulbapedia API for Episode " + str(episodeNum))
-            episodeNum = episodeNum + 1
-        else:
-            break
-    return pokemonEpisodesInfo
-
-def getEveryMovieInfo(movieNum=1):
-    pokemonMoviesInfo = []
-    while True:
-        movieInfo = getMediaInfo(movieNum, 'M')
-        if movieInfo == -1: break
-        if movieInfo == -503:
-            print("An error occured while fetching episodes. Please try again.")
-            exit()
-        if movieInfo != -1:
-            pokemonMoviesInfo.append(movieInfo)
-            print("Getting movie info from Bulbapedia API for Movie " + str(movieNum))
-            movieNum = movieNum + 1
-        else:
-            break
-    return pokemonMoviesInfo
-
 def getAllMediaInfo(startingEpisodeNum=1):
     allMediaInfo = []
     # TODO: Side Stories, Origins, Generations, Twilight Wings, Mystery Dungeon, Animated trailers
-    mediaTypes = ['EP', 'M']
-    for mediaType in mediaTypes:
-        longMediaType = getLongMediaTypeString(mediaType)
+    for mediaType in MEDIATYPES:
+        longMediaType = MEDIATYPES[mediaType]
 
         # Get starting media num for iteration
         if mediaType == 'EP': mediaNum = startingEpisodeNum
@@ -149,7 +130,7 @@ def getAllMediaInfo(startingEpisodeNum=1):
                 exit()
             if mediaInfo != -1:
                 allMediaInfo.append(mediaInfo)
-                print("Obtained info from Bulbapedia API for " + longMediaType.capitalize() + " " + str(mediaNum))
+                print("Obtained info from Bulbapedia API for " + longMediaType[:1].upper() + longMediaType[1:] + " " + str(mediaNum))
                 mediaNum = mediaNum + 1
             else:
                 break
