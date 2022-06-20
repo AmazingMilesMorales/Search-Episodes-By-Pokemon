@@ -80,9 +80,8 @@ def getInfoFromEpisodePageText(episodePageText, string):
     return info.strip()
 
 
-def getEveryMainAnimeEpisodeInfo():
+def getEveryMainAnimeEpisodeInfo(episodeNum=1):
     pokemonEpisodesInfo = []
-    episodeNum = 1
     while True:
         episodeInfo = getEpisodeInfo(episodeNum)
         if episodeInfo == -1: break
@@ -97,7 +96,7 @@ def getEveryMainAnimeEpisodeInfo():
             break
     return pokemonEpisodesInfo
 
-def getEveryEpisodeInfo():
-    pokemonEpisodesInfo = getEveryMainAnimeEpisodeInfo()
+def getAllMediaInfo(startingEpisodeNum=1):
+    pokemonEpisodesInfo = getEveryMainAnimeEpisodeInfo(startingEpisodeNum)
     # TODO: Movies, Side Stories, Origins, Generations, Twilight Wings, Mystery Dungeon, Animated trailers
     return pokemonEpisodesInfo

@@ -46,14 +46,12 @@ CLEAR_SPECIES_TABLE_DATA = "DELETE FROM species"
 
 CLEAR_EPISODES_SPECIES_TABLE_DATA = "DELETE FROM episodesSpecies"
 
-
 def sendSqlStatement(command):
     connection = sqlite3.connect(DATABASE)
     db = connection.cursor()
     db.execute(command)
     connection.commit()
     return db.fetchall()
-    connection.close()
 
 def escapedString(string):
     return string.translate(str.maketrans({"'":  r"''"}))
@@ -122,12 +120,16 @@ def getPokemonIdByName(pokemon):
     connection.commit()
     return stripSqlResult(str(db.fetchall()))
 
-def getEpisodesByPokemonId(pokemonId, pokemon):
+def getMediaByPokemonId(pokemonId, pokemon):
     connection = sqlite3.connect(DATABASE)
-    db = connection.cursor()    
-    getEpisodes = "SELECT episodeId FROM episodesSpecies WHERE pokemonId='" + pokemonId + "'"
+    db = connection.cursor()
+
+    # Get Episodes
+    # TODO: Why are there duplicates in the first place? Investigate database. Use Incineroar as test case
+    getEpisodes = "SELECT DISTINCT episodeId FROM episodesSpecies WHERE pokemonId='" + pokemonId + "'"
     db.execute(getEpisodes)
     connection.commit()
+
     episodeIds = db.fetchall()
     for episodeId in episodeIds:
         episodeIdString = stripSqlResult(str(episodeId))
@@ -138,11 +140,14 @@ def getEpisodesByPokemonId(pokemonId, pokemon):
         print(pokemon + " appears in Episode " + episodeNum + ": " + episodeTitle)
         connection.commit()
     connection.close()
-    print("Done!")
 
-def getEpisodesByPokemonName(pokemon):
+    # TODO: Movies, Side Stories, Origins, Generations, Twilight Wings, Mystery Dungeon, Animated trailers
+
+    print(pokemon + " has appeared in " + str(len(episodeIds)) + " episodes!")
+
+def getMediaByPokemonName(pokemon):
     pokemonId = getPokemonIdByName(pokemon)
-    getEpisodesByPokemonId(pokemonId, pokemon)
+    getMediaByPokemonId(pokemonId, pokemon)
 
 
 def dumpFile(file, listObject):
@@ -166,18 +171,33 @@ def createDatabase():
     # Create Episodes Table
     sendSqlStatement(DROP_EPISODES_TABLE)
     sendSqlStatement(CREATE_EPISODES_TABLE)
-    pokemonEpisodesInfo = episode.getEveryEpisodeInfo()
+    pokemonMediaInfo = episode.getAllMediaInfo()
     # Since we are dealing with a 1115+ episodes of content, just in case
     # any errors happen, I'll dump the file for reuse/testing
-    dumpFile("pokemonEpisodesInfo.p", pokemonEpisodesInfo)
-    fillEpisodesTable(pokemonEpisodesInfo)
+    dumpFile("pokemonMediaInfo.p", pokemonMediaInfo)
+    fillEpisodesTable(pokemonMediaInfo)
 
     # Create Species-Episodes Relationship Table
     sendSqlStatement(DROP_EPISODES_SPECIES_TABLE)
     sendSqlStatement(CREATE_EPISODES_SPECIES_TABLE)
-    fillEpisodesSpeciesTable(pokemonEpisodesInfo)
+    fillEpisodesSpeciesTable(pokemonMediaInfo)
 
-def createDatabaseFromSavedFile(file="pokemonEpisodesInfo.p"):
+def createDatabaseFromSavedFile(file="pokemonMediaInfo.p"):
+    # Create Species Table
+    createSpeciesTable()
+
+    # Create Episodes Table
+    sendSqlStatement(DROP_EPISODES_TABLE)
+    sendSqlStatement(CREATE_EPISODES_TABLE)
+    pokemonMediaInfo = readFile(file)
+    fillEpisodesTable(pokemonMediaInfo)
+
+    # Create Species-Episodes Relationship Table
+    sendSqlStatement(DROP_EPISODES_SPECIES_TABLE)
+    sendSqlStatement(CREATE_EPISODES_SPECIES_TABLE)
+    fillEpisodesSpeciesTable(pokemonMediaInfo)
+
+def updateDatabaseFromSavedFile(file="pokemonMediaInfo.p"):
     # Create Species Table
     createSpeciesTable()
 
@@ -185,6 +205,11 @@ def createDatabaseFromSavedFile(file="pokemonEpisodesInfo.p"):
     sendSqlStatement(DROP_EPISODES_TABLE)
     sendSqlStatement(CREATE_EPISODES_TABLE)
     pokemonEpisodesInfo = readFile(file)
+    numOfEpisodesSoFar = len(pokemonEpisodesInfo) - 25; # the previous 25 episodes are also run again in case of updates to the episodes wiki page due to upcoming episodes
+    pokemonEpisodesInfo = pokemonEpisodesInfo[0:numOfEpisodesSoFar] # cut potentially outdated episode data
+    newEpisodesInfo = episode.getAllMediaInfo(numOfEpisodesSoFar + 1)
+    pokemonEpisodesInfo = pokemonEpisodesInfo + newEpisodesInfo
+    dumpFile("pokemonMediaInfo.p", pokemonEpisodesInfo) # Save results
     fillEpisodesTable(pokemonEpisodesInfo)
 
     # Create Species-Episodes Relationship Table
