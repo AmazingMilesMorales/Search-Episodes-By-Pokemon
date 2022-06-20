@@ -2,12 +2,12 @@ import sqlite3
 import pickle 
 
 # Local
-import episode
+import retrieveMediaInfo
 import species
 
 # Commands and Constants
 CREATE_EPISODES_TABLE = """CREATE TABLE episodes (
-            id integer,
+            id string,
             type text,
             episodeNum integer,
             episodeCode text,
@@ -82,9 +82,9 @@ def fillEpisodesTable(pokemonEpisodeInfo):
     db = connection.cursor()
 
     for pokemonEpisode in pokemonEpisodeInfo:
-        print("Filling EpisodesTable for Episode " + str(pokemonEpisode['id']))
-        sqlStatement = ("INSERT INTO episodes VALUES (" + 
-            str(pokemonEpisode['id']) + ", '" +
+        print("Filling EpisodesTable for " + str(pokemonEpisode['id']))
+        sqlStatement = ("INSERT INTO episodes VALUES ('" + 
+            str(pokemonEpisode['id']) + "', '" +
             pokemonEpisode['type'] + "', " +
             str(pokemonEpisode['episodeNum']) + ", '" +
             pokemonEpisode['episodeCode'] + "', '" +
@@ -103,11 +103,11 @@ def fillEpisodesSpeciesTable(pokemonEpisodeInfo):
 
     for pokemonEpisode in pokemonEpisodeInfo:
         episodeId = str(pokemonEpisode['id'])
-        print("Filling EpisodesSpeciesTable for Episode " + episodeId)
+        print("Filling EpisodesSpeciesTable for " + episodeId)
         pokemonAppearances = pokemonEpisode['pokemonAppearances']
         for pokemon in pokemonAppearances:
             pokemonId = getPokemonIdByName(pokemon)
-            sqlStatement = ("INSERT INTO episodesSpecies VALUES (" + episodeId + ", " + pokemonId + ")")
+            sqlStatement = ("INSERT INTO episodesSpecies VALUES ('" + episodeId + "', " + pokemonId + ")")
             db.execute(sqlStatement)
     connection.commit()
     connection.close()
@@ -132,18 +132,18 @@ def getMediaByPokemonId(pokemonId, pokemon):
 
     episodeIds = db.fetchall()
     for episodeId in episodeIds:
-        episodeIdString = stripSqlResult(str(episodeId))
-        episodeNum = stripSqlResult(str(sendSqlStatement("SELECT episodeNum FROM episodes WHERE id=" + episodeIdString + "")))
-        episodeTitle = stripSqlResult(str(sendSqlStatement("SELECT englishEpisodeTitle FROM episodes WHERE id=" + episodeIdString + "")))
+        episodeIdString = stripSqlResult(episodeId[0])
+        #episodeNum = stripSqlResult(str(sendSqlStatement("SELECT episodeNum FROM episodes WHERE id=" + episodeIdString + "")))
+        episodeTitle = stripSqlResult(str(sendSqlStatement("SELECT englishEpisodeTitle FROM episodes WHERE id='" + episodeIdString + "'")))
         if episodeTitle == "''":
-            episodeTitle = stripSqlResult(str(sendSqlStatement("SELECT japaneseEpisodeTitleTranslated FROM episodes WHERE id=" + episodeIdString))) + " (translated)"
-        print(pokemon + " appears in Episode " + episodeNum + ": " + episodeTitle)
+            episodeTitle = stripSqlResult(str(sendSqlStatement("SELECT japaneseEpisodeTitleTranslated FROM episodes WHERE id='" + episodeIdString + "'"))) + " (translated)"
+        print(pokemon + " appears in " + episodeIdString + ": " + episodeTitle)
         connection.commit()
     connection.close()
 
     # TODO: Movies, Side Stories, Origins, Generations, Twilight Wings, Mystery Dungeon, Animated trailers
 
-    print(pokemon + " has appeared in " + str(len(episodeIds)) + " episodes!")
+    print(pokemon + " has appeared in " + str(len(episodeIds)) + " pieces of media!")
 
 def getMediaByPokemonName(pokemon):
     pokemonId = getPokemonIdByName(pokemon)
@@ -171,7 +171,7 @@ def createDatabase():
     # Create Episodes Table
     sendSqlStatement(DROP_EPISODES_TABLE)
     sendSqlStatement(CREATE_EPISODES_TABLE)
-    pokemonMediaInfo = episode.getAllMediaInfo()
+    pokemonMediaInfo = retrieveMediaInfo.getAllMediaInfo()
     # Since we are dealing with a 1115+ episodes of content, just in case
     # any errors happen, I'll dump the file for reuse/testing
     dumpFile("pokemonMediaInfo.p", pokemonMediaInfo)
@@ -204,15 +204,24 @@ def updateDatabaseFromSavedFile(file="pokemonMediaInfo.p"):
     # Create Episodes Table
     sendSqlStatement(DROP_EPISODES_TABLE)
     sendSqlStatement(CREATE_EPISODES_TABLE)
-    pokemonEpisodesInfo = readFile(file)
-    numOfEpisodesSoFar = len(pokemonEpisodesInfo) - 25; # the previous 25 episodes are also run again in case of updates to the episodes wiki page due to upcoming episodes
-    pokemonEpisodesInfo = pokemonEpisodesInfo[0:numOfEpisodesSoFar] # cut potentially outdated episode data
-    newEpisodesInfo = episode.getAllMediaInfo(numOfEpisodesSoFar + 1)
-    pokemonEpisodesInfo = pokemonEpisodesInfo + newEpisodesInfo
-    dumpFile("pokemonMediaInfo.p", pokemonEpisodesInfo) # Save results
-    fillEpisodesTable(pokemonEpisodesInfo)
+    
+    # Read file
+    pokemonMediaInfo = readFile(file)
+
+    # Add media to table
+    # numOfEpisodesSoFar = len(pokemonEpisodesInfo) - 25; # the previous 25 episodes are also run again in case of updates to the episodes wiki page due to upcoming episodes
+    # TODO: Above solution no longer works due to more media types being added. Figure out solution so that updating does not take forever in the future.
+    #       Additionally, current solution ensures that episodes are always stored first.
+    numOfEpisodesSoFar = 1199
+    pokemonMediaInfo = pokemonMediaInfo[0:numOfEpisodesSoFar] # cut potentially outdated episode data
+    newEpisodesInfo = retrieveMediaInfo.getAllMediaInfo(numOfEpisodesSoFar + 1) # Also gets every nonepisode media
+    pokemonMediaInfo = pokemonMediaInfo + newEpisodesInfo
+
+    # Save results to file and table
+    dumpFile("pokemonMediaInfo.p", pokemonMediaInfo)
+    fillEpisodesTable(pokemonMediaInfo)
 
     # Create Species-Episodes Relationship Table
     sendSqlStatement(DROP_EPISODES_SPECIES_TABLE)
     sendSqlStatement(CREATE_EPISODES_SPECIES_TABLE)
-    fillEpisodesSpeciesTable(pokemonEpisodesInfo)
+    fillEpisodesSpeciesTable(pokemonMediaInfo)

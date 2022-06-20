@@ -20,9 +20,9 @@ while(True):
     if choice == "help":
         print("* exit to exit program")
         print("* help for list of commands")
-        print("* udb or updatedb to update episodes database with new episodes from and saved to the pokemonMediaInfo.p file (Recommended for first time or if it's been a while since database has been updated)")
-        print("* cdb or createdb to get a fully updated database from scratch using Bulbapedia API and save to pokemonMediaInfo.p (Will take a few minutes and might cause an error, useful if pokemonMediaInfo.p is missing/corrupted)")
-        print("* qdb or quickdb to create episodes database from the pokemonMediaInfo.p file (Useful if pokemonanime.db is missing/corrupted)")
+        print("* udb or updatedb to update database with new episodes from and saved to the pokemonMediaInfo.p file (Recommended for first time or if it's been a while since database has been updated)")
+        print("* cdb or createdb to create database from scratch using Bulbapedia API and save to pokemonMediaInfo.p (Will take a few minutes and might cause an error, useful if pokemonMediaInfo.p is missing/corrupted)")
+        print("* qdb or quickdb to create database from the pokemonMediaInfo.p file (Useful if pokemonanime.db is missing/corrupted)")
     elif choice == "exit":
         print("Exiting program...")
         exit()
